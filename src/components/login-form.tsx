@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Onboarding } from "@/assets/assets";
+import { Link } from "react-router-dom";
 
 type LoginFormProps = Omit<React.ComponentProps<"div">, "onSubmit"> & {
     onLogin?: (values: { email: string; password: string }) => void;
@@ -115,7 +116,7 @@ export function LoginForm({ className, onLogin, ...props }: LoginFormProps) {
                             </Field>
                             <FieldDescription className="text-center">
                                 Don&apos;t have an account?{" "}
-                                <a href="/signup">Sign up</a>
+                                <Link to="/signup">Sign up</Link>
                             </FieldDescription>
                         </FieldGroup>
                     </form>

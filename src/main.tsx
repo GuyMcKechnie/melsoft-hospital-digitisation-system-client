@@ -3,16 +3,19 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 import App from "./App";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Failed to find the root element");
 
 createRoot(rootElement).render(
     <StrictMode>
-        <BrowserRouter>
-            <App />
-            <Toaster richColors />
-        </BrowserRouter>
+        <ThemeProvider>
+            <BrowserRouter>
+                <App />
+                <Toaster richColors />
+            </BrowserRouter>
+        </ThemeProvider>
     </StrictMode>,
 );
