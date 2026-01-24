@@ -1,20 +1,13 @@
 import { LoginForm } from "@/components/login-form";
 import { login, type LoginPayload } from "@/api/auth";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
     const navigate = useNavigate();
     const handleSubmit = async (values: LoginPayload) => {
-        try {
-            // await login(values);
-            console.table(values);
-            toast.success("Logged in successfully.");
-            navigate("/dashboard", { replace: true });
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Login failed.");
-        }
+        await login(values);
+        navigate("/dashboard", { replace: true });
     };
 
     return (

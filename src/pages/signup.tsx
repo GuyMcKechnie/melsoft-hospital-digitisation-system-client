@@ -1,6 +1,5 @@
 import { SignupForm } from "@/components/signup-form";
 import { signup, type SignupPayload } from "@/api/auth";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -8,13 +7,8 @@ export default function SignupPage() {
     const navigate = useNavigate();
 
     const handleSignup = async (values: SignupPayload) => {
-        try {
-            await signup(values);
-            toast.success("Account created successfully.");
-            navigate("/", { replace: true });
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Signup failed.");
-        }
+        await signup(values);
+        navigate("/", { replace: true });
     };
 
     return (
