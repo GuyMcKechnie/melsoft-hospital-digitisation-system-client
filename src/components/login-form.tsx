@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Onboarding } from "@/assets/assets";
 import { Link } from "react-router-dom";
 import { loginFormSchema } from "@/lib/validation-schemas";
+import { toast } from "sonner";
 
 type LoginFormValues = z.infer<typeof loginFormSchema>;
 
@@ -38,7 +39,13 @@ export function LoginForm({ className, onLogin, ...props }: LoginFormProps) {
     });
 
     const onSubmit = async (values: LoginFormValues) => {
-        await onLogin?.(values);
+        try {
+            await onLogin?.(values);
+            toast.success("Logged in successfully.");
+        } catch (error) {
+            console.error("Login error", error);
+            toast.error("Login failed. Please try again.");
+        }
     };
 
     return (

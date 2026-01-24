@@ -11,12 +11,12 @@ import {
     FieldError,
     FieldGroup,
     FieldLabel,
-    FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Onboarding } from "@/assets/assets";
 import { Link } from "react-router-dom";
 import { signupFormSchema } from "@/lib/validation-schemas";
+import { toast } from "sonner";
 
 type SignupFormValues = z.infer<typeof signupFormSchema>;
 
@@ -39,7 +39,13 @@ export function SignupForm({ className, onSignup, ...props }: SignupFormProps) {
     });
 
     const onSubmit = async (values: SignupFormValues) => {
-        await onSignup?.(values);
+        try {
+            await onSignup?.(values);
+            toast.success("Account created successfully.");
+        } catch (error) {
+            console.error("Signup error", error);
+            toast.error("Signup failed. Please try again.");
+        }
     };
 
     return (
