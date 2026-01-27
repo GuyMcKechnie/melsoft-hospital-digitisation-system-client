@@ -32,7 +32,10 @@ export function SignupForm({ className, onSignup, ...props }: SignupFormProps) {
     } = useForm<SignupFormValues>({
         resolver: zodResolver(signupFormSchema),
         defaultValues: {
+            firstName: "",
+            lastName: "",
             email: "",
+            idNumber: "",
             password: "",
             confirmPassword: "",
         },
@@ -67,6 +70,40 @@ export function SignupForm({ className, onSignup, ...props }: SignupFormProps) {
                                 </p>
                             </div>
                             <Field>
+                                <Field className="grid grid-cols-2 gap-4">
+                                    <Field>
+                                        <FieldLabel htmlFor="firstName">
+                                            First Name
+                                        </FieldLabel>
+                                        <Input
+                                            id="firstName"
+                                            type="text"
+                                            placeholder="John"
+                                            autoComplete="given-name"
+                                            {...register("firstName")}
+                                        />
+                                        <FieldError
+                                            errors={[errors.firstName]}
+                                        />
+                                    </Field>
+                                    <Field>
+                                        <FieldLabel htmlFor="lastName">
+                                            Last Name
+                                        </FieldLabel>
+                                        <Input
+                                            id="lastName"
+                                            type="text"
+                                            placeholder="Doe"
+                                            autoComplete="family-name"
+                                            {...register("lastName")}
+                                        />
+                                        <FieldError
+                                            errors={[errors.lastName]}
+                                        />
+                                    </Field>
+                                </Field>
+                            </Field>
+                            <Field>
                                 <FieldLabel htmlFor="email">Email</FieldLabel>
                                 <Input
                                     id="email"
@@ -80,6 +117,19 @@ export function SignupForm({ className, onSignup, ...props }: SignupFormProps) {
                                     We&apos;ll use this to contact you. We will
                                     not share your email with anyone else.
                                 </FieldDescription>
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="idNumber">
+                                    ID Number
+                                </FieldLabel>
+                                <Input
+                                    id="idNumber"
+                                    type="text"
+                                    placeholder="8001015009087"
+                                    autoComplete="off"
+                                    {...register("idNumber")}
+                                />
+                                <FieldError errors={[errors.idNumber]} />
                             </Field>
                             <Field>
                                 <Field className="grid grid-cols-2 gap-4">
