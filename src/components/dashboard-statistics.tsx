@@ -1,4 +1,3 @@
-import React from "react";
 import {
     ArrowDownRight,
     ArrowUpRight,
@@ -50,8 +49,7 @@ function DashboardStatistics() {
                 const IconComponent = stat.icon;
                 return (
                     <div
-                        className="bg-white dark:bg-slate-50 backdrop-blur-xl rounded-2xl p-5 shadow-md shadow-slate-200/30 hover:shadow-xl hover:shadow-slate-200/40
-        dark:shadow-slate-900/10 dark:hover:shadow-slate-900/20 transition-all duration-300 group"
+                        className="bg-card text-card-foreground backdrop-blur-xl rounded-2xl p-5 shadow-md shadow-sidebar-ring/10 hover:shadow-xl transition-all duration-300 group"
                         key={index}
                     >
                         <div className="flex flex-col">
@@ -65,12 +63,12 @@ function DashboardStatistics() {
                             </div>
 
                             {/* The Title */}
-                            <h3 className="text-lg font-bold text-black dark:text-black mb-2">
+                            <h3 className="text-lg font-bold mb-2">
                                 {stat.title}
                             </h3>
 
                             {/* The Value (number of patients) */}
-                            <p className="text-xl font-semibold text-slate-700 dark:text-slate-700 mb-3">
+                            <p className="text-xl font-semibold text-muted-foreground mb-3">
                                 {stat.value}
                             </p>
 

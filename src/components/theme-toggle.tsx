@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
+import { Moon, Sun } from "lucide-react";
 
 export function ThemeToggle() {
     const { theme, toggleTheme } = useTheme();
@@ -11,7 +12,7 @@ export function ThemeToggle() {
             onClick={toggleTheme}
             aria-label="Toggle theme"
         >
-            {theme === "dark" ? "Light mode" : "Dark mode"}
+            {theme === "dark" ? <Sun /> : <Moon />}
         </Button>
     );
 }

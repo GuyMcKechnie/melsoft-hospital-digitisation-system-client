@@ -8,20 +8,14 @@ import { JSX } from "react";
 function ClinicalDashboardPage(): JSX.Element {
     return (
         <SidebarProvider>
-            <div className="min-h-screen flex bg-gray-50">
+            <div className="min-h-screen flex">
                 <AppSidebar />
-
                 <div className="flex-1">
                     <SiteHeader />
-
-                    <main className="p-6 max-w-[1200px] mx-auto">
+                    <main className="mx-auto">
                         <div className="space-y-6">
-                            <div>
-                                <DashboardStatistics />
-                            </div>
-                            <div>
-                                <PatientManagement />
-                            </div>
+                            <DashboardStatistics />
+                            <PatientManagement />
                         </div>
                     </main>
                 </div>

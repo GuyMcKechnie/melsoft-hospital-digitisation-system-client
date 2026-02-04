@@ -1,5 +1,5 @@
 import React, { JSX, useState } from "react";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, X } from "lucide-react";
 
 type Patient = {
     name: string;
@@ -66,24 +66,22 @@ function PatientManagement(): JSX.Element {
     };
 
     return (
-        <div className="min-h-screen bg-white p-6">
-            <h2 className="text-3xl font-bold text-black text-center mb-6">
-                Admin Panel
-            </h2>
+        <div className="min-h-screen bg-background p-6 text-foreground">
+            <h2 className="text-3xl font-bold text-center mb-6">Admin Panel</h2>
 
             <div className="mb-4 flex justify-end">
                 <button
                     onClick={() => setShowForm(!showForm)}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2"
+                    className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-all flex items-center gap-2"
                 >
-                    <Plus size={20} />
+                    {showForm ? <X size={20} /> : <Plus size={20} />}
                     {showForm ? "Cancel" : "Add New Patient"}
                 </button>
             </div>
 
             {showForm && (
-                <div className="bg-gray-50 p-6 rounded-xl shadow-lg mb-6">
-                    <h3 className="text-xl font-semibold mb-4 text-gray-700">
+                <div className="bg-card p-6 rounded-xl shadow-sm mb-6 text-card-foreground">
+                    <h3 className="text-xl font-semibold mb-4">
                         Add New Patient
                     </h3>
                     <form
@@ -96,7 +94,7 @@ function PatientManagement(): JSX.Element {
                             placeholder="Patient Name"
                             value={newPatient.name}
                             onChange={handleInputChange}
-                            className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
                             required
                         />
                         <input
@@ -105,7 +103,7 @@ function PatientManagement(): JSX.Element {
                             placeholder="ID Number"
                             value={newPatient.id}
                             onChange={handleInputChange}
-                            className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
                             required
                         />
                         <input
@@ -114,7 +112,7 @@ function PatientManagement(): JSX.Element {
                             placeholder="Last Visit (e.g., March 7th 2025)"
                             value={newPatient.lastVisit}
                             onChange={handleInputChange}
-                            className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                         <input
                             type="text"
@@ -122,7 +120,7 @@ function PatientManagement(): JSX.Element {
                             placeholder="Diagnosis"
                             value={newPatient.diagnosis}
                             onChange={handleInputChange}
-                            className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                         <input
                             type="text"
@@ -130,7 +128,7 @@ function PatientManagement(): JSX.Element {
                             placeholder="Doctor Name"
                             value={newPatient.doctor}
                             onChange={handleInputChange}
-                            className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                         <input
                             type="number"
@@ -138,11 +136,11 @@ function PatientManagement(): JSX.Element {
                             placeholder="Age"
                             value={newPatient.age}
                             onChange={handleInputChange}
-                            className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                         <button
                             type="submit"
-                            className="md:col-span-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all"
+                            className="md:col-span-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-all"
                         >
                             Add Patient
                         </button>
@@ -151,9 +149,9 @@ function PatientManagement(): JSX.Element {
             )}
 
             <div className="overflow-x-auto">
-                <table className="w-full bg-white shadow-lg rounded-xl">
+                <table className="w-full bg-card shadow-sm rounded-xl text-card-foreground">
                     <thead>
-                        <tr className="bg-blue-400 text-white text-left">
+                        <tr className="bg-primary text-primary-foreground text-left">
                             <th className="p-3">Patient Name</th>
                             <th className="p-3">ID No</th>
                             <th className="p-3">Last Visit</th>
@@ -169,7 +167,7 @@ function PatientManagement(): JSX.Element {
                             <tr>
                                 <td
                                     colSpan={7}
-                                    className="p-4 text-center text-gray-500"
+                                    className="p-4 text-center text-muted-foreground"
                                 >
                                     No accounts found
                                 </td>
@@ -178,7 +176,7 @@ function PatientManagement(): JSX.Element {
                             patients.map((patient, index) => (
                                 <tr
                                     key={index}
-                                    className="border-b hover:bg-gray-50"
+                                    className="border-b border-border hover:bg-popover"
                                 >
                                     <td className="p-3">{patient.name}</td>
                                     <td className="p-3">{patient.id}</td>
@@ -191,7 +189,7 @@ function PatientManagement(): JSX.Element {
                                             onClick={() =>
                                                 handleDeletePatient(index)
                                             }
-                                            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-all"
+                                            className="bg-destructive text-primary-foreground px-3 py-1 rounded hover:opacity-90 transition-all"
                                         >
                                             <Trash2 />
                                         </button>
