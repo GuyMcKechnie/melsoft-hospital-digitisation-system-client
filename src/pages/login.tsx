@@ -5,7 +5,9 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
     const navigate = useNavigate();
-    const isDev = import.meta.env.MODE === "development" || (import.meta.env as any).ENVIRONMENT === "development";
+    const isDev =
+        import.meta.env.MODE === "development" ||
+        (import.meta.env as any).ENVIRONMENT === "development";
 
     const handleSubmit = async (values: LoginPayload) => {
         if (isDev) {
