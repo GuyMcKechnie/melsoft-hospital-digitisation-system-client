@@ -14,6 +14,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Link } from "react-router-dom";
 
 const ITEMS: { title: string; url: string; icon?: Icon }[] = [
     { title: "Dashboard", url: "/dashboard", icon: IconDashboard },
@@ -31,13 +32,13 @@ export function NavMain() {
                     {ITEMS.map((item) => (
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton tooltip={item.title} asChild>
-                                <a
-                                    href={item.url}
+                                <Link
+                                    to={item.url}
                                     className="flex items-center gap-2"
                                 >
                                     {item.icon && <item.icon />}
                                     <span>{item.title}</span>
-                                </a>
+                                </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     ))}
