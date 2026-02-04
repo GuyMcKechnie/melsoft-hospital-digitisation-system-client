@@ -5,7 +5,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { JSX } from "react";
 
-function ClinicalDashboardPage(): JSX.Element {
+function AdminDashboard(): JSX.Element {
     return (
         <SidebarProvider>
             <div className="min-h-screen flex">
@@ -24,4 +24,4 @@ function ClinicalDashboardPage(): JSX.Element {
     );
 }
 
-export default ClinicalDashboardPage;
+export default AdminDashboard;

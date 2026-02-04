@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/login";
 import SignupPage from "./pages/signup";
 import ForgotPasswordPage from "./pages/forgot-password";
-import ClinicalDashboardPage from "./pages/clinical-dashboard-page";
+import AdminDashboard from "./pages/clinical-dashboard-page";
 import UserDashboard from "./pages/user-dashboard";
 
 function App() {
@@ -11,7 +11,7 @@ function App() {
             <Route path="/" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/dashboard" element={<ClinicalDashboardPage />} />
+            <Route path="/dashboard" element={<AdminDashboard />} />
             <Route path="/user-dashboard" element={<UserDashboard />} />
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
