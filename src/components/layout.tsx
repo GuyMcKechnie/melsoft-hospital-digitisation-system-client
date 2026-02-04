@@ -14,7 +14,7 @@ export default function RootLayout({
 }: RootLayoutProps) {
     return (
         <SidebarProvider>
-            <div className="min-h-screen flex">
+            <div className="min-h-screen flex mx-auto w-full">
                 <AppSidebar {...(sidebarProps ?? ({} as any))} />
                 <div className="flex-1">{children}</div>
                 <Toaster />
