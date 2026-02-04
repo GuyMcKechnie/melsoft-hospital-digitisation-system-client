@@ -1,4 +1,5 @@
 import React, { JSX, useState } from "react";
+import { z } from "zod";
 import { Trash2, Plus, X } from "lucide-react";
 
 type Patient = {
@@ -33,6 +34,7 @@ function PatientManagement(): JSX.Element {
         doctor: "",
         age: "",
     });
+    const [errors, setErrors] = useState<Record<string, string> | null>(null);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -42,23 +44,59 @@ function PatientManagement(): JSX.Element {
         }));
     };
 
+    const PatientFormSchema = z.object({
+        name: z.string().min(1, "Name is required"),
+        id: z.string().min(1, "ID is required"),
+        lastVisit: z.string().optional().or(z.literal("")),
+        diagnosis: z.string().optional().or(z.literal("")),
+        doctor: z.string().optional().or(z.literal("")),
+        age: z.preprocess((val) => {
+            if (typeof val === "string") {
+                const n = parseInt(val, 10);
+                return Number.isNaN(n) ? 0 : n;
+            }
+            if (typeof val === "number") return val;
+            return 0;
+        }, z.number().int().nonnegative()),
+    });
+
     const handleAddPatient = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (newPatient.name && newPatient.id) {
-            setPatients((prev) => [
-                ...prev,
-                { ...newPatient, age: parseInt(newPatient.age, 10) || 0 },
-            ]);
-            setNewPatient({
-                name: "",
-                id: "",
-                lastVisit: "",
-                diagnosis: "",
-                doctor: "",
-                age: "",
+        setErrors(null);
+
+        const result = PatientFormSchema.safeParse(newPatient as any);
+        if (!result.success) {
+            const errMap: Record<string, string> = {};
+            result.error.issues.forEach((err: z.ZodIssue) => {
+                const key = String(err.path[0] ?? "form");
+                if (!errMap[key]) errMap[key] = err.message;
             });
-            setShowForm(false);
+            setErrors(errMap);
+            return;
         }
+
+        const parsed = result.data;
+        setPatients((prev) => [
+            ...prev,
+            {
+                name: parsed.name,
+                id: parsed.id,
+                lastVisit: parsed.lastVisit ?? "",
+                diagnosis: parsed.diagnosis ?? "",
+                doctor: parsed.doctor ?? "",
+                age: parsed.age,
+            },
+        ]);
+
+        setNewPatient({
+            name: "",
+            id: "",
+            lastVisit: "",
+            diagnosis: "",
+            doctor: "",
+            age: "",
+        });
+        setShowForm(false);
     };
 
     const handleDeletePatient = (index: number) => {
@@ -96,7 +134,13 @@ function PatientManagement(): JSX.Element {
                             onChange={handleInputChange}
                             className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
                             required
+                            aria-invalid={errors?.name ? "true" : "false"}
                         />
+                        {errors?.name && (
+                            <p className="text-sm text-destructive mt-1">
+                                {errors.name}
+                            </p>
+                        )}
                         <input
                             type="text"
                             name="id"
@@ -105,7 +149,13 @@ function PatientManagement(): JSX.Element {
                             onChange={handleInputChange}
                             className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
                             required
+                            aria-invalid={errors?.id ? "true" : "false"}
                         />
+                        {errors?.id && (
+                            <p className="text-sm text-destructive mt-1">
+                                {errors.id}
+                            </p>
+                        )}
                         <input
                             type="text"
                             name="lastVisit"
@@ -137,7 +187,13 @@ function PatientManagement(): JSX.Element {
                             value={newPatient.age}
                             onChange={handleInputChange}
                             className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
+                            aria-invalid={errors?.age ? "true" : "false"}
                         />
+                        {errors?.age && (
+                            <p className="text-sm text-destructive mt-1">
+                                {errors.age}
+                            </p>
+                        )}
                         <button
                             type="submit"
                             className="md:col-span-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-all"
