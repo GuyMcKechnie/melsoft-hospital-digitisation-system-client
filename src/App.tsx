@@ -5,6 +5,7 @@ import ForgotPasswordPage from "./pages/forgot-password";
 import AdminDashboard from "./pages/admin-dashboard";
 import UserDashboard from "./pages/user-dashboard";
 import UsersPage from "./pages/user-management";
+import ServicesPage from "./pages/services";
 
 function App() {
     return (
@@ -13,6 +14,7 @@ function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/dashboard" element={<AdminDashboard />} />
+            <Route path="/services" element={<ServicesPage />} />
             <Route path="/user-dashboard" element={<UserDashboard />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
