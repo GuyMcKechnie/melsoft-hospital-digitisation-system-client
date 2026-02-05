@@ -3,6 +3,8 @@ import RootLayout from "@/components/layout";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createAppointment } from "@/api";
+import { toast } from "sonner";
 
 type Service = {
     id: string;
@@ -82,37 +84,56 @@ export default function ServicesPage() {
 
         setStatus("loading");
 
-        try {
-            // Attempt to send booking request to API. If API not available, simulate success.
-            const resp = await fetch("/api/bookings", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
+        // optimistic create: dispatch event with temp appointment
+        const tempId = `tmp-${Date.now()}`;
+        const tempAppointment = {
+            id: tempId,
+            service: selected.name,
+            date,
+            time,
+            doctor: undefined,
+            status: "Pending",
+        } as any;
 
-            if (resp.ok) {
-                setStatus("success");
-                setMessage(
-                    "Booking request submitted. You will be notified when confirmed.",
-                );
-                setDate("");
-                setTime("");
-                setNotes("");
-                setSelected(null);
-            } else {
-                // If server returns error, try to parse message
-                const data = await resp.json().catch(() => ({}));
-                setStatus("error");
-                setMessage(data?.message || "Failed to submit booking.");
-            }
-        } catch (err) {
-            // Simulate success if network/API not available
+        window.dispatchEvent(
+            new CustomEvent("appointments:create", { detail: tempAppointment }),
+        );
+
+        try {
+            const created = await createAppointment({
+                service: selected.name,
+                date,
+                time,
+                notes,
+            } as any);
+
+            // Confirm optimistic entry with server response
+            window.dispatchEvent(
+                new CustomEvent("appointments:create:confirm", {
+                    detail: { tempId, appointment: created },
+                }),
+            );
+            toast.success("Booking request submitted.");
+
             setStatus("success");
-            setMessage("Booking request submitted (simulation).");
             setDate("");
             setTime("");
             setNotes("");
             setSelected(null);
+        } catch (err: any) {
+            // Rollback optimistic entry and show error
+            window.dispatchEvent(
+                new CustomEvent("appointments:create:rollback", {
+                    detail: {
+                        tempId,
+                        message: err?.message || "Failed to submit booking.",
+                    },
+                }),
+            );
+            console.error("Failed to create appointment", err);
+            toast.error(err?.message || "Failed to submit booking.");
+            setStatus("error");
+            setMessage(err?.message || "Failed to submit booking.");
         }
     };
 

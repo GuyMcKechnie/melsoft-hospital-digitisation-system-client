@@ -1,78 +1,52 @@
-import { JSX, useState } from "react";
+import { JSX, useEffect, useState } from "react";
 import RootLayout from "@/components/layout";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
+import {
+    listAppointments,
+    cancelAppointment as apiCancelAppointment,
+    rescheduleAppointment as apiRescheduleAppointment,
+    Appointment as ApiAppointment,
+} from "@/api";
+import { toast } from "sonner";
 
-type Appointment = {
-    id: string;
-    service: string;
-    date: string; // YYYY-MM-DD
-    time: string; // HH:MM
-    doctor?: string;
-    status: "Pending" | "Approved" | "Completed" | "Cancelled";
+type Appointment = ApiAppointment;
+
+const initialAppointments: Appointment[] = [];
+
+const parseDateTime = (a: Appointment): Date => {
+    return new Date(`${a.date}T${a.time}`);
 };
-
-const initialAppointments: Appointment[] = [
-    {
-        id: "a1",
-        service: "General Consultation",
-        date: "2026-02-10",
-        time: "10:30",
-        doctor: "Dr. Nkosi",
-        status: "Approved",
-    },
-    {
-        id: "a2",
-        service: "Blood Test",
-        date: "2026-02-01",
-        time: "09:00",
-        doctor: "Pathology Lab",
-        status: "Completed",
-    },
-    {
-        id: "a3",
-        service: "X-Ray",
-        date: "2026-02-20",
-        time: "14:00",
-        doctor: "Dr. Lee",
-        status: "Pending",
-    },
-    {
-        id: "a4",
-        service: "Pediatrics Consultation",
-        date: "2025-12-15",
-        time: "11:00",
-        doctor: "Dr. Patel",
-        status: "Completed",
-    },
-];
 
 export default function AppointmentsPage(): JSX.Element {
     const [appointments, setAppointments] =
         useState<Appointment[]>(initialAppointments);
+    const [loading, setLoading] = useState(false);
 
-    const now = new Date();
+    const handleCancelAppointment = async (id: string) => {
+        const a = appointments.find((x) => x.id === id);
+        if (!a || a.status === "Completed" || a.status === "Cancelled") return;
 
-    const parseDateTime = (a: Appointment) => new Date(`${a.date}T${a.time}`);
-
-    const upcoming = appointments.filter(
-        (a) => parseDateTime(a) >= now && a.status !== "Cancelled",
-    );
-    const past = appointments.filter(
-        (a) => parseDateTime(a) < now || a.status === "Cancelled",
-    );
-
-    const cancelAppointment = (id: string) => {
-        setAppointments((prev) =>
-            prev.map((a) =>
-                a.id === id && a.status !== "Completed"
-                    ? { ...a, status: "Cancelled" }
-                    : a,
-            ),
-        );
+        try {
+            await apiCancelAppointment(id);
+            setAppointments((prev) =>
+                prev.map((x) =>
+                    x.id === id
+                        ? {
+                              ...x,
+                              status: "Cancelled",
+                          }
+                        : x,
+                ),
+            );
+            toast.success("Appointment cancelled");
+        } catch (err) {
+            console.error("Failed to cancel appointment", err);
+            toast.error("Failed to cancel appointment");
+        }
     };
 
-    const rescheduleAppointment = (id: string) => {
+    const handleRescheduleAppointment = async (id: string) => {
         const a = appointments.find((x) => x.id === id);
         if (!a || a.status === "Completed" || a.status === "Cancelled") return;
 
@@ -81,19 +55,111 @@ export default function AppointmentsPage(): JSX.Element {
         const newTime = window.prompt("Enter new time (HH:MM)", a.time);
         if (!newTime) return;
 
-        setAppointments((prev) =>
-            prev.map((x) =>
-                x.id === id
-                    ? { ...x, date: newDate, time: newTime, status: "Pending" }
-                    : x,
-            ),
-        );
+        try {
+            await apiRescheduleAppointment(id, newDate, newTime);
+            setAppointments((prev) =>
+                prev.map((x) =>
+                    x.id === id
+                        ? {
+                              ...x,
+                              date: newDate,
+                              time: newTime,
+                              status: "Pending",
+                          }
+                        : x,
+                ),
+            );
+            toast.success("Appointment rescheduled");
+        } catch (err) {
+            console.error("Failed to reschedule appointment", err);
+            toast.error("Failed to reschedule appointment");
+        }
     };
 
     const formatDT = (a: Appointment) => {
         const d = parseDateTime(a);
         return `${d.toLocaleDateString()} • ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
     };
+
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            setLoading(true);
+            try {
+                const data = await listAppointments();
+                if (mounted && Array.isArray(data)) setAppointments(data);
+            } catch (err) {
+                console.error("Failed to load appointments", err);
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        })();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        const onCreate = (e: Event) => {
+            const detail = (e as CustomEvent).detail as Appointment;
+            if (detail) setAppointments((prev) => [detail, ...prev]);
+        };
+
+        const onConfirm = (e: Event) => {
+            const { tempId, appointment } = (e as CustomEvent).detail as any;
+            if (!tempId || !appointment) return;
+            setAppointments((prev) =>
+                prev.map((a) => (a.id === tempId ? appointment : a)),
+            );
+        };
+
+        const onRollback = (e: Event) => {
+            const { tempId, message } = (e as CustomEvent).detail as any;
+            if (!tempId) return;
+            setAppointments((prev) => prev.filter((a) => a.id !== tempId));
+            if (message) toast.error(message);
+        };
+
+        window.addEventListener(
+            "appointments:create",
+            onCreate as EventListener,
+        );
+        window.addEventListener(
+            "appointments:create:confirm",
+            onConfirm as EventListener,
+        );
+        window.addEventListener(
+            "appointments:create:rollback",
+            onRollback as EventListener,
+        );
+
+        return () => {
+            window.removeEventListener(
+                "appointments:create",
+                onCreate as EventListener,
+            );
+            window.removeEventListener(
+                "appointments:create:confirm",
+                onConfirm as EventListener,
+            );
+            window.removeEventListener(
+                "appointments:create:rollback",
+                onRollback as EventListener,
+            );
+        };
+    }, []);
+
+    const upcoming = appointments.filter(
+        (a) =>
+            new Date(`${a.date}T${a.time}`) > new Date() &&
+            a.status !== "Cancelled",
+    );
+    const past = appointments.filter(
+        (a) =>
+            new Date(`${a.date}T${a.time}`) <= new Date() ||
+            a.status === "Cancelled",
+    );
 
     return (
         <RootLayout>
@@ -113,13 +179,17 @@ export default function AppointmentsPage(): JSX.Element {
                         <h2 className="text-lg font-medium mb-4">
                             Upcoming Appointments
                         </h2>
-                        {upcoming.length === 0 ? (
+                        {loading ? (
+                            <div className="text-muted-foreground">
+                                Loading...
+                            </div>
+                        ) : upcoming.length === 0 ? (
                             <div className="text-muted-foreground">
                                 No upcoming appointments.
                             </div>
                         ) : (
                             <div className="flex flex-col gap-3">
-                                {upcoming.map((a) => (
+                                {upcoming.map((a: Appointment) => (
                                     <div
                                         key={a.id}
                                         className="flex items-center justify-between border border-border rounded-md p-3 hover:bg-popover"
@@ -141,7 +211,9 @@ export default function AppointmentsPage(): JSX.Element {
                                             <Button
                                                 variant="outline"
                                                 onClick={() =>
-                                                    rescheduleAppointment(a.id)
+                                                    handleRescheduleAppointment(
+                                                        a.id,
+                                                    )
                                                 }
                                                 disabled={
                                                     a.status === "Completed"
@@ -152,7 +224,9 @@ export default function AppointmentsPage(): JSX.Element {
                                             <Button
                                                 variant="destructive"
                                                 onClick={() =>
-                                                    cancelAppointment(a.id)
+                                                    handleCancelAppointment(
+                                                        a.id,
+                                                    )
                                                 }
                                                 disabled={
                                                     a.status === "Completed"
@@ -177,7 +251,7 @@ export default function AppointmentsPage(): JSX.Element {
                             </div>
                         ) : (
                             <div className="flex flex-col gap-3">
-                                {past.map((a) => (
+                                {past.map((a: Appointment) => (
                                     <div
                                         key={a.id}
                                         className="flex items-center justify-between border border-border rounded-md p-3 bg-[--card-background]"
