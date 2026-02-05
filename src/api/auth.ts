@@ -9,9 +9,12 @@ export type LoginResponse = {
 };
 
 export type SignupPayload = {
+    firstName: string;
+    lastName: string;
     email: string;
     password: string;
     confirmPassword: string;
+    idNumber?: string;
 };
 
 export type SignupResponse = {
@@ -26,7 +29,15 @@ export async function login(payload: LoginPayload) {
 }
 
 export async function signup(payload: SignupPayload) {
-    const { data } = await api.post<SignupResponse>("/auth/signup", payload);
+    const body = {
+        name: `${payload.firstName} ${payload.lastName}`,
+        email: payload.email,
+        password: payload.password,
+        confirmPassword: payload.confirmPassword,
+        idNumber: payload.idNumber,
+    };
+
+    const { data } = await api.post<SignupResponse>("/auth/signup", body);
     if (data?.token) setAuthToken(data.token);
     return data;
 }
