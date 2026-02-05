@@ -119,7 +119,7 @@ export default function ServicesPage() {
     return (
         <RootLayout>
             <SiteHeader />
-            <main className="mx-auto p-6 max-w-[1000px]">
+            <main className="mx-auto p-6 max-w-250">
                 <div className="mb-6">
                     <h1 className="text-2xl font-semibold">Book a Service</h1>
                     <p className="text-sm text-muted-foreground">

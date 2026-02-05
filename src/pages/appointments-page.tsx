@@ -1,4 +1,4 @@
-import React, { JSX, useState } from "react";
+import { JSX, useState } from "react";
 import RootLayout from "@/components/layout";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
@@ -99,7 +99,7 @@ export default function AppointmentsPage(): JSX.Element {
         <RootLayout>
             <SiteHeader />
 
-            <main className="mx-auto p-6 max-w-[1000px]">
+            <main className="mx-auto p-6 max-w-250">
                 <div className="mb-6">
                     <h1 className="text-2xl font-semibold">My Appointments</h1>
                     <p className="text-sm text-muted-foreground">
