@@ -1,6 +1,8 @@
-import React, { JSX, useState } from "react";
+import React, { JSX, useEffect, useState } from "react";
+import { listUsers, createUser, updateUser, deleteUser } from "@/api";
+import { toast } from "sonner";
 import { z } from "zod";
-import { Trash2, Plus, X } from "lucide-react";
+import { Trash2, Plus, X, Edit3, Check, RotateCw } from "lucide-react";
 
 type Patient = {
     name: string;
@@ -14,16 +16,8 @@ type Patient = {
 type PatientInput = Omit<Patient, "age"> & { age: string };
 
 function UserManagement(): JSX.Element {
-    const [patients, setPatients] = useState<Patient[]>([
-        {
-            name: "Janet Abigail",
-            id: "12345678",
-            lastVisit: "March 7th 2025",
-            diagnosis: "Flu",
-            doctor: "Blok",
-            age: 21,
-        },
-    ]);
+    const [patients, setPatients] = useState<Patient[]>([]);
+    const [loading, setLoading] = useState(false);
 
     const [showForm, setShowForm] = useState(false);
     const [newPatient, setNewPatient] = useState<PatientInput>({
@@ -76,17 +70,41 @@ function UserManagement(): JSX.Element {
         }
 
         const parsed = result.data;
-        setPatients((prev) => [
-            ...prev,
-            {
-                name: parsed.name,
-                id: parsed.id,
-                lastVisit: parsed.lastVisit ?? "",
-                diagnosis: parsed.diagnosis ?? "",
-                doctor: parsed.doctor ?? "",
-                age: parsed.age,
-            },
-        ]);
+        // optimistic UI: create local entry and attempt to persist to API
+        const tempId = `tmp-${Date.now()}`;
+        const newEntry: Patient = {
+            name: parsed.name,
+            id: tempId,
+            lastVisit: parsed.lastVisit ?? "",
+            diagnosis: parsed.diagnosis ?? "",
+            doctor: parsed.doctor ?? "",
+            age: parsed.age,
+        };
+
+        setPatients((prev) => [newEntry, ...prev]);
+
+        (async () => {
+            try {
+                const created = await createUser({
+                    name: parsed.name,
+                    email: `${parsed.id}@example.com`,
+                    role: "patient",
+                    active: true,
+                } as any);
+
+                // replace temp entry with server-created user (if returned)
+                setPatients((prev) =>
+                    prev.map((p) =>
+                        p.id === tempId ? { ...p, id: created.id } : p,
+                    ),
+                );
+                toast.success("User created");
+            } catch (err: any) {
+                // rollback
+                setPatients((prev) => prev.filter((p) => p.id !== tempId));
+                toast.error(err?.message || "Failed to create user");
+            }
+        })();
 
         setNewPatient({
             name: "",
@@ -100,8 +118,107 @@ function UserManagement(): JSX.Element {
     };
 
     const handleDeletePatient = (index: number) => {
+        const p = patients[index];
+        if (!p) return;
+
+        // optimistic remove
+        const snapshot = patients;
         setPatients((prev) => prev.filter((_, i) => i !== index));
+
+        (async () => {
+            try {
+                // if id is temp, just remove locally
+                if (p.id.startsWith("tmp-")) return;
+                await deleteUser(p.id);
+                toast.success("User deleted");
+            } catch (err: any) {
+                setPatients(snapshot);
+                toast.error(err?.message || "Failed to delete user");
+            }
+        })();
     };
+
+    // Inline edit state
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState<Partial<Patient> | null>(null);
+
+    const startEdit = (p: Patient) => {
+        if (p.id.startsWith("tmp-")) {
+            toast.error(
+                "Please wait for user creation to finish before editing.",
+            );
+            return;
+        }
+        setEditingId(p.id);
+        setEditForm({ ...p });
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setEditForm(null);
+    };
+
+    const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setEditForm((prev) => ({
+            ...(prev ?? {}),
+            [name]: name === "age" ? Number(value) : value,
+        }));
+    };
+
+    const saveEdit = async (id: string) => {
+        if (!editForm) return;
+        const snapshot = patients;
+        // optimistic update
+        setPatients((prev) =>
+            prev.map((p) =>
+                p.id === id ? ({ ...p, ...editForm } as Patient) : p,
+            ),
+        );
+
+        try {
+            await updateUser(id, {
+                name: editForm.name,
+                // map other fields if your backend supports them
+            } as any);
+            toast.success("User updated");
+            cancelEdit();
+        } catch (err: any) {
+            setPatients(snapshot);
+            toast.error(err?.message || "Failed to update user");
+        }
+    };
+
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            setLoading(true);
+            try {
+                const data = await listUsers();
+                if (mounted && Array.isArray(data)) {
+                    // Map server users to Patient shape minimally
+                    setPatients(
+                        data.map((u) => ({
+                            name: u.name || u.email || "",
+                            id: u.id,
+                            lastVisit: "",
+                            diagnosis: "",
+                            doctor: "",
+                            age: 0,
+                        })),
+                    );
+                }
+            } catch (err) {
+                console.error("Failed to load users", err);
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        })();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     return (
         <div className="min-h-screen w-full bg-background p-6 text-foreground">
@@ -216,7 +333,7 @@ function UserManagement(): JSX.Element {
                             <th className="p-3">Diagnosis</th>
                             <th className="p-3">Doctor</th>
                             <th className="p-3">Age</th>
-                            <th className="p-3">Delete</th>
+                            <th className="p-3">Actions</th>
                         </tr>
                     </thead>
 
@@ -233,24 +350,117 @@ function UserManagement(): JSX.Element {
                         ) : (
                             patients.map((patient, index) => (
                                 <tr
-                                    key={index}
+                                    key={patient.id}
                                     className="border-b border-border hover:bg-popover"
                                 >
-                                    <td className="p-3">{patient.name}</td>
-                                    <td className="p-3">{patient.id}</td>
-                                    <td className="p-3">{patient.lastVisit}</td>
-                                    <td className="p-3">{patient.diagnosis}</td>
-                                    <td className="p-3">{patient.doctor}</td>
-                                    <td className="p-3">{patient.age}</td>
                                     <td className="p-3">
-                                        <button
-                                            onClick={() =>
-                                                handleDeletePatient(index)
-                                            }
-                                            className="bg-destructive text-primary-foreground px-3 py-1 rounded hover:opacity-90 transition-all"
-                                        >
-                                            <Trash2 />
-                                        </button>
+                                        {editingId === patient.id ? (
+                                            <input
+                                                name="name"
+                                                value={editForm?.name ?? ""}
+                                                onChange={handleEditChange}
+                                                className="p-1 border border-border rounded w-full"
+                                            />
+                                        ) : (
+                                            patient.name
+                                        )}
+                                    </td>
+                                    <td className="p-3">{patient.id}</td>
+                                    <td className="p-3">
+                                        {editingId === patient.id ? (
+                                            <input
+                                                name="lastVisit"
+                                                value={
+                                                    editForm?.lastVisit ?? ""
+                                                }
+                                                onChange={handleEditChange}
+                                                className="p-1 border border-border rounded w-full"
+                                            />
+                                        ) : (
+                                            patient.lastVisit
+                                        )}
+                                    </td>
+                                    <td className="p-3">
+                                        {editingId === patient.id ? (
+                                            <input
+                                                name="diagnosis"
+                                                value={
+                                                    editForm?.diagnosis ?? ""
+                                                }
+                                                onChange={handleEditChange}
+                                                className="p-1 border border-border rounded w-full"
+                                            />
+                                        ) : (
+                                            patient.diagnosis
+                                        )}
+                                    </td>
+                                    <td className="p-3">
+                                        {editingId === patient.id ? (
+                                            <input
+                                                name="doctor"
+                                                value={editForm?.doctor ?? ""}
+                                                onChange={handleEditChange}
+                                                className="p-1 border border-border rounded w-full"
+                                            />
+                                        ) : (
+                                            patient.doctor
+                                        )}
+                                    </td>
+                                    <td className="p-3 w-24">
+                                        {editingId === patient.id ? (
+                                            <input
+                                                name="age"
+                                                type="number"
+                                                value={String(
+                                                    editForm?.age ?? "",
+                                                )}
+                                                onChange={handleEditChange}
+                                                className="p-1 border border-border rounded w-full"
+                                            />
+                                        ) : (
+                                            patient.age
+                                        )}
+                                    </td>
+                                    <td className="p-3 flex gap-2">
+                                        {editingId === patient.id ? (
+                                            <>
+                                                <button
+                                                    onClick={() =>
+                                                        saveEdit(patient.id)
+                                                    }
+                                                    className="bg-primary text-primary-foreground px-3 py-1 rounded hover:opacity-90 transition-all flex items-center gap-2"
+                                                >
+                                                    <Check /> Save
+                                                </button>
+                                                <button
+                                                    onClick={cancelEdit}
+                                                    className="bg-ghost px-3 py-1 rounded hover:opacity-90 transition-all flex items-center gap-2"
+                                                >
+                                                    <RotateCw /> Cancel
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={() =>
+                                                        startEdit(patient)
+                                                    }
+                                                    className="bg-secondary text-secondary-foreground px-3 py-1 rounded hover:opacity-90 transition-all flex items-center gap-2"
+                                                >
+                                                    <Edit3 /> Edit
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        handleDeletePatient(
+                                                            index,
+                                                        )
+                                                    }
+                                                    className="bg-destructive text-primary-foreground px-3 py-1 rounded hover:opacity-90 transition-all"
+                                                >
+                                                    <Trash2 />
+                                                </button>
+                                            </>
+                                        )}
                                     </td>
                                 </tr>
                             ))
