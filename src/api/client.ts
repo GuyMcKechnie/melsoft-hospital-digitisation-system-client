@@ -1,9 +1,17 @@
 import api from "./api";
 
+const TOKEN_KEY = "melsoft_auth_token";
+
 export function setAuthToken(token: string | null) {
     if (token) {
+        try {
+            localStorage.setItem(TOKEN_KEY, token);
+        } catch (e) { }
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     } else {
+        try {
+            localStorage.removeItem(TOKEN_KEY);
+        } catch (e) { }
         delete api.defaults.headers.common["Authorization"];
     }
 }
@@ -42,3 +50,26 @@ export const crud = {
 };
 
 export default api;
+
+// restore token from localStorage on module load so headers are set
+try {
+    const stored = localStorage.getItem(TOKEN_KEY);
+    if (stored) setAuthToken(stored);
+} catch (e) { }
+
+// intercept 401 responses: clear auth and redirect to login
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error?.response?.status;
+        if (status === 401) {
+            setAuthToken(null);
+            try {
+                if (window.location.pathname !== "/") {
+                    window.location.href = "/";
+                }
+            } catch (e) { }
+        }
+        return Promise.reject(error);
+    }
+);

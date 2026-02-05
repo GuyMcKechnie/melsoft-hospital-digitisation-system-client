@@ -9,7 +9,16 @@ export type User = {
 };
 
 export function listUsers(params?: Record<string, any>) {
-    return crud.list<User[]>("users", params);
+    return (async () => {
+        const res = await crud.list<any>("users", params);
+        // API responses are sometimes wrapped as { success: true, data: { items: [...] } }
+        if (res && typeof res === "object") {
+            if (Array.isArray(res)) return res as User[];
+            if (Array.isArray(res.items)) return res.items as User[];
+            if (res.data && Array.isArray(res.data.items)) return res.data.items as User[];
+        }
+        return res as User[];
+    })();
 }
 
 export function getUser(id: string) {

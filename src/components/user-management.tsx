@@ -1,5 +1,6 @@
 import React, { JSX, useEffect, useState } from "react";
 import { listUsers, createUser, updateUser, deleteUser } from "@/api";
+import { useAuth } from "@/contexts/auth";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Trash2, Plus, X, Edit3, Check, RotateCw } from "lucide-react";
@@ -11,6 +12,7 @@ type Patient = {
     diagnosis: string;
     doctor: string;
     age: number;
+    role?: string;
 };
 
 type PatientInput = Omit<Patient, "age"> & { age: string };
@@ -20,18 +22,27 @@ function UserManagement(): JSX.Element {
     const [loading, setLoading] = useState(false);
 
     const [showForm, setShowForm] = useState(false);
-    const [newPatient, setNewPatient] = useState<PatientInput>({
+    const { currentUser } = useAuth();
+
+    const [newPatient, setNewPatient] = useState<
+        PatientInput & { role?: string }
+    >({
         name: "",
         id: "",
         lastVisit: "",
         diagnosis: "",
         doctor: "",
         age: "",
+        role: "user",
     });
     const [errors, setErrors] = useState<Record<string, string> | null>(null);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
+    const handleInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    ) => {
+        const { name, value } = e.target as
+            | HTMLInputElement
+            | HTMLSelectElement;
         setNewPatient((prev) => ({
             ...prev,
             [name]: value,
@@ -88,7 +99,7 @@ function UserManagement(): JSX.Element {
                 const created = await createUser({
                     name: parsed.name,
                     email: `${parsed.id}@example.com`,
-                    role: "patient",
+                    role: (newPatient as any).role || "user",
                     active: true,
                 } as any);
 
@@ -113,6 +124,7 @@ function UserManagement(): JSX.Element {
             diagnosis: "",
             doctor: "",
             age: "",
+            role: "user",
         });
         setShowForm(false);
     };
@@ -158,8 +170,12 @@ function UserManagement(): JSX.Element {
         setEditForm(null);
     };
 
-    const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
+    const handleEditChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    ) => {
+        const { name, value } = e.target as
+            | HTMLInputElement
+            | HTMLSelectElement;
         setEditForm((prev) => ({
             ...(prev ?? {}),
             [name]: name === "age" ? Number(value) : value,
@@ -177,10 +193,11 @@ function UserManagement(): JSX.Element {
         );
 
         try {
-            await updateUser(id, {
-                name: editForm.name,
-                // map other fields if your backend supports them
-            } as any);
+            const payload: any = { name: editForm.name };
+            // allow admins to change role
+            if (currentUser?.role === "admin" && editForm.role)
+                payload.role = editForm.role;
+            await updateUser(id, payload);
             toast.success("User updated");
             cancelEdit();
         } catch (err: any) {
@@ -221,45 +238,39 @@ function UserManagement(): JSX.Element {
     }, []);
 
     return (
-        <div className="min-h-screen w-full bg-background p-6 text-foreground">
-            <h2 className="text-3xl font-bold text-center mb-6">
-                User Management
-            </h2>
-
-            <div className="mb-4 flex justify-end">
+        <div className="w-full">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">Users</h3>
                 <button
                     onClick={() => setShowForm(!showForm)}
-                    className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-all flex items-center gap-2"
+                    className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-3 py-2 rounded hover:opacity-90 transition-all"
                 >
-                    {showForm ? <X size={20} /> : <Plus size={20} />}
-                    {showForm ? "Cancel" : "Add New Patient"}
+                    {showForm ? <X size={18} /> : <Plus size={18} />}
+                    <span className="text-sm">
+                        {showForm ? "Cancel" : "Add User"}
+                    </span>
                 </button>
             </div>
 
             {showForm && (
-                <div className="bg-card p-6 rounded-xl shadow-sm mb-6 text-card-foreground">
-                    <h3 className="text-xl font-semibold mb-4">
-                        Add New Patient
-                    </h3>
+                <div className="border border-border p-4 rounded-md mb-4 bg-[--card-background]">
+                    <h4 className="text-base font-semibold mb-3">
+                        Add New User
+                    </h4>
                     <form
                         onSubmit={handleAddPatient}
-                        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                        className="grid grid-cols-1 md:grid-cols-2 gap-3"
                     >
                         <input
                             type="text"
                             name="name"
-                            placeholder="Patient Name"
+                            placeholder="Name"
                             value={newPatient.name}
                             onChange={handleInputChange}
                             className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
                             required
                             aria-invalid={errors?.name ? "true" : "false"}
                         />
-                        {errors?.name && (
-                            <p className="text-sm text-destructive mt-1">
-                                {errors.name}
-                            </p>
-                        )}
                         <input
                             type="text"
                             name="id"
@@ -270,11 +281,6 @@ function UserManagement(): JSX.Element {
                             required
                             aria-invalid={errors?.id ? "true" : "false"}
                         />
-                        {errors?.id && (
-                            <p className="text-sm text-destructive mt-1">
-                                {errors.id}
-                            </p>
-                        )}
                         <input
                             type="text"
                             name="lastVisit"
@@ -299,6 +305,18 @@ function UserManagement(): JSX.Element {
                             onChange={handleInputChange}
                             className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
                         />
+                        {currentUser?.role === "admin" && (
+                            <select
+                                name="role"
+                                value={(newPatient as any).role ?? "user"}
+                                onChange={handleInputChange}
+                                className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
+                            >
+                                <option value="user">user</option>
+                                <option value="staff">staff</option>
+                                <option value="admin">admin</option>
+                            </select>
+                        )}
                         <input
                             type="number"
                             name="age"
@@ -308,30 +326,26 @@ function UserManagement(): JSX.Element {
                             className="p-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-ring"
                             aria-invalid={errors?.age ? "true" : "false"}
                         />
-                        {errors?.age && (
-                            <p className="text-sm text-destructive mt-1">
-                                {errors.age}
-                            </p>
-                        )}
                         <button
                             type="submit"
-                            className="md:col-span-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-all"
+                            className="md:col-span-2 bg-primary text-primary-foreground px-4 py-2 rounded hover:opacity-90 transition-all"
                         >
-                            Add Patient
+                            Add User
                         </button>
                     </form>
                 </div>
             )}
 
             <div className="overflow-x-auto">
-                <table className="w-full bg-card shadow-sm rounded-xl text-card-foreground">
+                <table className="w-full text-card-foreground">
                     <thead>
                         <tr className="bg-primary text-primary-foreground text-left">
-                            <th className="p-3">Patient Name</th>
-                            <th className="p-3">ID No</th>
+                            <th className="p-3">Patient</th>
+                            <th className="p-3">ID</th>
                             <th className="p-3">Last Visit</th>
                             <th className="p-3">Diagnosis</th>
                             <th className="p-3">Doctor</th>
+                            <th className="p-3">Role</th>
                             <th className="p-3">Age</th>
                             <th className="p-3">Actions</th>
                         </tr>
@@ -341,10 +355,10 @@ function UserManagement(): JSX.Element {
                         {patients.length === 0 ? (
                             <tr>
                                 <td
-                                    colSpan={7}
+                                    colSpan={8}
                                     className="p-4 text-center text-muted-foreground"
                                 >
-                                    No accounts found
+                                    No users found
                                 </td>
                             </tr>
                         ) : (
@@ -365,7 +379,9 @@ function UserManagement(): JSX.Element {
                                             patient.name
                                         )}
                                     </td>
-                                    <td className="p-3">{patient.id}</td>
+                                    <td className="p-3">
+                                        {patient.id.substring(0, 5)}
+                                    </td>
                                     <td className="p-3">
                                         {editingId === patient.id ? (
                                             <input
@@ -406,6 +422,38 @@ function UserManagement(): JSX.Element {
                                             patient.doctor
                                         )}
                                     </td>
+                                    <td className="p-3 w-36">
+                                        {editingId === patient.id ? (
+                                            currentUser?.role === "admin" ? (
+                                                <select
+                                                    name="role"
+                                                    value={
+                                                        editForm?.role ??
+                                                        patient.role ??
+                                                        "user"
+                                                    }
+                                                    onChange={handleEditChange}
+                                                    className="p-1 border border-border rounded w-full"
+                                                >
+                                                    <option value="user">
+                                                        user
+                                                    </option>
+                                                    <option value="staff">
+                                                        staff
+                                                    </option>
+                                                    <option value="admin">
+                                                        admin
+                                                    </option>
+                                                </select>
+                                            ) : (
+                                                (editForm?.role ??
+                                                patient.role ??
+                                                "-")
+                                            )
+                                        ) : (
+                                            (patient.role ?? "-")
+                                        )}
+                                    </td>
                                     <td className="p-3 w-24">
                                         {editingId === patient.id ? (
                                             <input
@@ -430,13 +478,14 @@ function UserManagement(): JSX.Element {
                                                     }
                                                     className="bg-primary text-primary-foreground px-3 py-1 rounded hover:opacity-90 transition-all flex items-center gap-2"
                                                 >
-                                                    <Check /> Save
+                                                    <Check size={16} /> Save
                                                 </button>
                                                 <button
                                                     onClick={cancelEdit}
                                                     className="bg-ghost px-3 py-1 rounded hover:opacity-90 transition-all flex items-center gap-2"
                                                 >
-                                                    <RotateCw /> Cancel
+                                                    <RotateCw size={16} />{" "}
+                                                    Cancel
                                                 </button>
                                             </>
                                         ) : (
@@ -447,7 +496,7 @@ function UserManagement(): JSX.Element {
                                                     }
                                                     className="bg-secondary text-secondary-foreground px-3 py-1 rounded hover:opacity-90 transition-all flex items-center gap-2"
                                                 >
-                                                    <Edit3 /> Edit
+                                                    <Edit3 size={16} /> Edit
                                                 </button>
                                                 <button
                                                     onClick={() =>
@@ -457,7 +506,7 @@ function UserManagement(): JSX.Element {
                                                     }
                                                     className="bg-destructive text-primary-foreground px-3 py-1 rounded hover:opacity-90 transition-all"
                                                 >
-                                                    <Trash2 />
+                                                    <Trash2 size={16} />
                                                 </button>
                                             </>
                                         )}

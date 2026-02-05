@@ -5,6 +5,7 @@ import "./index.css";
 import App from "./App";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/contexts/auth";
 
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Failed to find the root element");
@@ -12,10 +13,12 @@ if (!rootElement) throw new Error("Failed to find the root element");
 createRoot(rootElement).render(
     <StrictMode>
         <ThemeProvider>
-            <BrowserRouter>
-                <App />
-                <Toaster richColors />
-            </BrowserRouter>
+            <AuthProvider>
+                <BrowserRouter>
+                    <App />
+                    <Toaster richColors />
+                </BrowserRouter>
+            </AuthProvider>
         </ThemeProvider>
     </StrictMode>,
 );

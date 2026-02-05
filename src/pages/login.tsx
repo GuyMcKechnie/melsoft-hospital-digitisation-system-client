@@ -5,17 +5,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
     const navigate = useNavigate();
-    const isDev = false;
-    // import.meta.env.MODE === "development" ||
-    // (import.meta.env as any).ENVIRONMENT === "development";
 
     const handleSubmit = async (values: LoginPayload) => {
-        if (isDev) {
-            console.info("Development mode: bypassing auth");
-            navigate("/dashboard", { replace: true });
-            return;
-        }
-
         await login(values);
         navigate("/dashboard", { replace: true });
     };
