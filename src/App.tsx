@@ -7,6 +7,7 @@ import UserDashboard from "./pages/user-dashboard";
 import UsersPage from "./pages/user-management";
 import ServicesPage from "./pages/services";
 import AppointmentsPage from "./pages/appointments-page";
+import EnquiriesPage from "./pages/enquiries-page";
 
 function App() {
     return (
@@ -17,6 +18,7 @@ function App() {
             <Route path="/dashboard" element={<AdminDashboard />} />
             <Route path="/appointments" element={<AppointmentsPage />} />
             <Route path="/services" element={<ServicesPage />} />
+            <Route path="/enquiries" element={<EnquiriesPage />} />
             <Route path="/user-dashboard" element={<UserDashboard />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
