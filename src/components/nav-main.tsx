@@ -21,7 +21,7 @@ const ITEMS: { title: string; url: string; icon?: Icon }[] = [
     { title: "Appointments", url: "/appointments", icon: IconListDetails },
     { title: "Users", url: "/users", icon: IconUsers },
     { title: "Services", url: "/services", icon: IconTools },
-    { title: "Enqiueries", url: "/enqiueries", icon: IconMail },
+    { title: "Enquiries", url: "/enquiries", icon: IconMail },
 ];
 
 export function NavMain() {
