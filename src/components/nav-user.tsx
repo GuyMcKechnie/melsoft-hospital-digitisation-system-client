@@ -7,6 +7,7 @@ import {
 } from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { post, setAuthToken } from "@/api/client";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -106,7 +107,38 @@ export function NavUser({
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                            onSelect={async () => {
+                                try {
+                                    // request server to invalidate refresh token / cleanup
+                                    await post("/auth/logout");
+                                } catch (e) {
+                                    // ignore errors but continue client-side cleanup
+                                } finally {
+                                    // clear client-side auth state and stored tokens
+                                    try {
+                                        setAuthToken(null);
+                                    } catch (e) {
+                                        try {
+                                            localStorage.removeItem(
+                                                "melsoft_auth_token",
+                                            );
+                                        } catch (e) {}
+                                    }
+                                    try {
+                                        localStorage.removeItem("accessToken");
+                                        localStorage.removeItem("refreshToken");
+                                    } catch (e) {}
+
+                                    // navigate to login route
+                                    try {
+                                        window.location.href = "/";
+                                    } catch (e) {
+                                        window.location.reload();
+                                    }
+                                }
+                            }}
+                        >
                             <IconLogout />
                             Log out
                         </DropdownMenuItem>
