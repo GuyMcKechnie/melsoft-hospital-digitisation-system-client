@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { get } from "@/api/client";
+import { get, getStoredAuthToken, setAuthToken } from "@/api/client";
 
 type User = {
     id: string;
@@ -12,7 +12,7 @@ type User = {
 type AuthContextValue = {
     currentUser: User | null;
     loading: boolean;
-    refresh: () => Promise<void>;
+    refresh: () => Promise<User | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -23,15 +23,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
-    const fetchMe = async () => {
+    const fetchMe = async (): Promise<User | null> => {
         try {
             setLoading(true);
+            const storedToken = getStoredAuthToken();
+            if (!storedToken) {
+                setCurrentUser(null);
+                return null;
+            }
+            setAuthToken(storedToken);
             const resp = await get<any>("/auth/me");
             // server envelopes responses as { success:true, data: { user } }
             const user = (resp && resp.data && resp.data.user) || null;
             setCurrentUser(user);
+            return user;
         } catch (err) {
             setCurrentUser(null);
+            return null;
         } finally {
             setLoading(false);
         }

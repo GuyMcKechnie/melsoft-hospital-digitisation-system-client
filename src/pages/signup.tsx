@@ -2,13 +2,18 @@ import { SignupForm } from "@/components/signup-form";
 import { signup, type SignupPayload } from "@/api/auth";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useAuth } from "@/contexts/auth";
 
 export default function SignupPage() {
     const navigate = useNavigate();
+    const { refresh } = useAuth();
 
     const handleSignup = async (values: SignupPayload) => {
         await signup(values);
-        navigate("/", { replace: true });
+        const user = await refresh();
+        const destination =
+            user?.role === "admin" ? "/dashboard" : "/user-dashboard";
+        navigate(destination, { replace: true });
     };
 
     return (

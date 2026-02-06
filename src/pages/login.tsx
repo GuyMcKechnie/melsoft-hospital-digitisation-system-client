@@ -2,13 +2,18 @@ import { LoginForm } from "@/components/login-form";
 import { login, type LoginPayload } from "@/api/auth";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useAuth } from "@/contexts/auth";
 
 export default function LoginPage() {
     const navigate = useNavigate();
+    const { refresh } = useAuth();
 
     const handleSubmit = async (values: LoginPayload) => {
         await login(values);
-        navigate("/dashboard", { replace: true });
+        const user = await refresh();
+        const destination =
+            user?.role === "admin" ? "/dashboard" : "/user-dashboard";
+        navigate(destination, { replace: true });
     };
 
     return (

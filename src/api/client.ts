@@ -2,6 +2,14 @@ import api from "./api";
 
 const TOKEN_KEY = "melsoft_auth_token";
 
+export function getStoredAuthToken(): string | null {
+    try {
+        return localStorage.getItem(TOKEN_KEY);
+    } catch (e) {
+        return null;
+    }
+}
+
 export function setAuthToken(token: string | null) {
     if (token) {
         try {
@@ -53,7 +61,7 @@ export default api;
 
 // restore token from localStorage on module load so headers are set
 try {
-    const stored = localStorage.getItem(TOKEN_KEY);
+    const stored = getStoredAuthToken();
     if (stored) setAuthToken(stored);
 } catch (e) { }
 
