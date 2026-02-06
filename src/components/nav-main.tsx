@@ -16,7 +16,9 @@ import {
 } from "@/components/ui/sidebar";
 import { Link } from "react-router-dom";
 
-const ITEMS: { title: string; url: string; icon?: Icon }[] = [
+type NavItem = { title: string; url: string; icon?: Icon };
+
+const DEFAULT_ITEMS: NavItem[] = [
     { title: "Dashboard", url: "/dashboard", icon: IconDashboard },
     { title: "Appointments", url: "/appointments", icon: IconListDetails },
     { title: "Users", url: "/users", icon: IconUsers },
@@ -24,12 +26,12 @@ const ITEMS: { title: string; url: string; icon?: Icon }[] = [
     { title: "Enquiries", url: "/enquiries", icon: IconMail },
 ];
 
-export function NavMain() {
+export function NavMain({ items = DEFAULT_ITEMS }: { items?: NavItem[] }) {
     return (
         <SidebarGroup>
             <SidebarGroupContent className="flex flex-col gap-2">
                 <SidebarMenu>
-                    {ITEMS.map((item) => (
+                    {items.map((item) => (
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton tooltip={item.title} asChild>
                                 <Link

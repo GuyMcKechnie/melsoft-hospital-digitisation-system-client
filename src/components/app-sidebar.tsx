@@ -1,11 +1,13 @@
 import * as React from "react";
 import {
     IconDashboard,
-    IconDatabase,
     IconHelp,
     IconListDetails,
     IconSearch,
     IconSettings,
+    IconTools,
+    IconUsers,
+    IconMail,
 } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -23,29 +25,12 @@ import {
 } from "@/components/ui/sidebar";
 import { HospitalIcon } from "lucide-react";
 
-    const data = {
+const data = {
     user: {
         name: "shadcn",
         email: "m@example.com",
         avatar: "/avatars/shadcn.jpg",
     },
-    navMain: [
-        {
-            title: "Dashboard",
-            url: "/dashboard",
-            icon: IconDashboard,
-        },
-        {
-            title: "Appointments",
-            url: "/appointments",
-            icon: IconListDetails,
-        },
-        {
-            title: "Records",
-            url: "/records",
-            icon: IconDatabase,
-        },
-    ],
     navSecondary: [
         {
             title: "Settings",
@@ -67,6 +52,27 @@ import { HospitalIcon } from "lucide-react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { currentUser } = useAuth();
+
+    const adminItems = [
+        { title: "Dashboard", url: "/dashboard", icon: IconDashboard },
+        { title: "Appointments", url: "/appointments", icon: IconListDetails },
+        { title: "Users", url: "/users", icon: IconUsers },
+        { title: "Enquiries", url: "/enquiries", icon: IconMail },
+    ];
+
+    const patientItems = [
+        { title: "Dashboard", url: "/user-dashboard", icon: IconDashboard },
+        { title: "Appointments", url: "/appointments", icon: IconListDetails },
+        { title: "Services", url: "/services", icon: IconTools },
+        { title: "Enquiries", url: "/enquiries", icon: IconMail },
+    ];
+
+    const navItems =
+        currentUser?.role === "admin"
+            ? adminItems
+            : currentUser?.role === "patient"
+              ? patientItems
+              : [];
 
     const sidebarUser = currentUser
         ? {
@@ -96,7 +102,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
-                <NavMain items={data.navMain} />
+                <NavMain items={navItems} />
                 <NavSecondary items={data.navSecondary} className="mt-auto" />
             </SidebarContent>
             <SidebarFooter>
