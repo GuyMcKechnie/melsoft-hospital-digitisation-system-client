@@ -1,7 +1,9 @@
-import { JSX, useState } from "react";
+import { JSX, useEffect, useState } from "react";
 import RootLayout from "@/components/layout";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
+import { get, post } from "@/api/client";
+import { useAuth } from "@/contexts/auth";
 
 type Reply = {
     id: string;
@@ -19,44 +21,8 @@ type MessageThread = {
     messages: Reply[];
 };
 
-const initialThreads: MessageThread[] = [
-    {
-        id: "m1",
-        fromName: "Janet Abigail",
-        subject: "Query about test results",
-        createdAt: "2026-02-01T09:12:00",
-        status: "open",
-        messages: [
-            {
-                id: "r1",
-                from: "user",
-                message: "Hi, when will my blood test results be available?",
-                date: "2026-02-01T09:12:00",
-            },
-        ],
-    },
-    {
-        id: "m2",
-        fromName: "John Doe",
-        subject: "Reschedule appointment",
-        createdAt: "2026-01-25T11:20:00",
-        status: "open",
-        messages: [
-            {
-                id: "r2",
-                from: "user",
-                message: "I need to reschedule my appointment to next week.",
-                date: "2026-01-25T11:20:00",
-            },
-            {
-                id: "r3",
-                from: "admin",
-                message: "Please provide preferred date and time.",
-                date: "2026-01-25T12:00:00",
-            },
-        ],
-    },
-];
+// initially empty; we'll load from the server
+const initialThreads: MessageThread[] = [];
 
 export default function EnquiriesPage(): JSX.Element {
     const [threads, setThreads] = useState<MessageThread[]>(initialThreads);
@@ -64,6 +30,10 @@ export default function EnquiriesPage(): JSX.Element {
         threads[0]?.id ?? null,
     );
     const [replyText, setReplyText] = useState("");
+    const [loading, setLoading] = useState(false);
+    const { currentUser, loading: authLoading } = useAuth();
+    const [newSubject, setNewSubject] = useState("");
+    const [newMessage, setNewMessage] = useState("");
 
     const selectThread = (id: string) => {
         setSelectedId(id);
@@ -72,31 +42,74 @@ export default function EnquiriesPage(): JSX.Element {
 
     const sendReply = () => {
         if (!selectedId || replyText.trim() === "") return;
-
-        const now = new Date().toISOString();
-        setThreads((prev) =>
-            prev.map((t) =>
-                t.id === selectedId
-                    ? {
-                          ...t,
-                          messages: [
-                              ...t.messages,
-                              {
-                                  id: `a-${Date.now()}`,
-                                  from: "admin",
-                                  message: replyText.trim(),
-                                  date: now,
-                              },
-                          ],
-                      }
-                    : t,
-            ),
-        );
-
-        setReplyText("");
+        (async () => {
+            try {
+                setLoading(true);
+                await post(`/enquiries/${selectedId}/replies`, {
+                    message: replyText.trim(),
+                });
+                // refresh list from server
+                await fetchThreads();
+                setReplyText("");
+            } catch (err) {
+                // TODO: show notification
+            } finally {
+                setLoading(false);
+            }
+        })();
     };
 
     const selected = threads.find((t) => t.id === selectedId) ?? null;
+
+    async function fetchThreads() {
+        if (authLoading) return;
+        try {
+            setLoading(true);
+            const resp = await get<any>(`/enquiries`);
+            const items = (resp && resp.data && resp.data.items) || [];
+            // client-side safety: if not admin, ensure only own enquiries are visible
+            const filtered =
+                currentUser && currentUser.role !== "admin"
+                    ? items.filter(
+                          (i: any) =>
+                              String(i.userId) === String(currentUser.id),
+                      )
+                    : items;
+            setThreads(filtered);
+            // select first if none selected
+            if (filtered.length && !selectedId) setSelectedId(filtered[0].id);
+        } catch (err) {
+            // ignore for now
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        fetchThreads();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authLoading, currentUser]);
+
+    const createEnquiry = async () => {
+        if (!currentUser || currentUser.role !== "patient") return;
+        if (!newSubject.trim() || !newMessage.trim()) return;
+        try {
+            setLoading(true);
+            const resp = await post<any>("/enquiries", {
+                subject: newSubject.trim(),
+                message: newMessage.trim(),
+            });
+            const created = resp && resp.data && resp.data.enquiry;
+            setNewSubject("");
+            setNewMessage("");
+            await fetchThreads();
+            if (created) setSelectedId(created.id);
+        } catch (err) {
+            // TODO: notify
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <RootLayout>
@@ -117,6 +130,53 @@ export default function EnquiriesPage(): JSX.Element {
                         <h2 className="text-lg font-medium mb-3">
                             Conversations
                         </h2>
+                        {/* Create form visible only to patients */}
+                        {currentUser && currentUser.role === "patient" && (
+                            <div className="mb-4 p-3 border rounded-md bg-background">
+                                <div className="text-sm font-medium mb-2">
+                                    Start a new enquiry
+                                </div>
+                                <input
+                                    className="w-full rounded-md border border-border px-2 py-1 mb-2 text-sm bg-card text-card-foreground"
+                                    placeholder="Subject"
+                                    value={newSubject}
+                                    onChange={(e) =>
+                                        setNewSubject(e.target.value)
+                                    }
+                                />
+                                <textarea
+                                    className="w-full rounded-md border border-border px-2 py-1 text-sm mb-2 bg-card text-card-foreground"
+                                    placeholder="Message"
+                                    rows={3}
+                                    value={newMessage}
+                                    onChange={(e) =>
+                                        setNewMessage(e.target.value)
+                                    }
+                                />
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={createEnquiry}
+                                        disabled={
+                                            loading ||
+                                            !newSubject.trim() ||
+                                            !newMessage.trim()
+                                        }
+                                    >
+                                        Create
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setNewSubject("");
+                                            setNewMessage("");
+                                        }}
+                                    >
+                                        Clear
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex flex-col gap-2">
                             {threads.map((t) => (
                                 <button
