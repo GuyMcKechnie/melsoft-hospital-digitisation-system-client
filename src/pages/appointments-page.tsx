@@ -9,6 +9,7 @@ import {
     Appointment as ApiAppointment,
 } from "@/api";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/auth";
 
 type Appointment = ApiAppointment;
 
@@ -19,6 +20,7 @@ const parseDateTime = (a: Appointment): Date => {
 };
 
 export default function AppointmentsPage(): JSX.Element {
+    const { currentUser, loading: authLoading } = useAuth();
     const [appointments, setAppointments] =
         useState<Appointment[]>(initialAppointments);
     const [loading, setLoading] = useState(false);
@@ -82,6 +84,14 @@ export default function AppointmentsPage(): JSX.Element {
     };
 
     useEffect(() => {
+        // restrict client-side: only patients may access this page
+        if (authLoading) return;
+        if (!currentUser || currentUser.role !== "patient") {
+            setAppointments([]);
+            setLoading(false);
+            return;
+        }
+
         let mounted = true;
         (async () => {
             setLoading(true);

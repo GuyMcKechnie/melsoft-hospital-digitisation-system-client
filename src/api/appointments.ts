@@ -10,7 +10,17 @@ export type Appointment = {
 };
 
 export function listAppointments(params?: Record<string, any>) {
-    return crud.list<Appointment[]>("appointments", params);
+    return (async () => {
+        const res = await crud.list<any>("appointments", params);
+        // Normalize response: backend uses { success: true, data: { items: [...] } }
+        if (res && typeof res === "object") {
+            if (Array.isArray(res)) return res as Appointment[];
+            // common shapes
+            if (Array.isArray(res.items)) return res.items as Appointment[];
+            if (res.data && Array.isArray(res.data.items)) return res.data.items as Appointment[];
+        }
+        return res as Appointment[];
+    })();
 }
 
 export function getAppointment(id: string) {
