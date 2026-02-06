@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import {
     ArrowDownRight,
     ArrowUpRight,
@@ -7,7 +8,16 @@ import {
     UserX,
 } from "lucide-react";
 
-const statistics = [
+export type DashboardStat = {
+    title: string;
+    value: string;
+    change?: string;
+    trend?: "up" | "down";
+    icon: ComponentType<{ className?: string }>;
+    iconColor: string;
+};
+
+const defaultStatistics: DashboardStat[] = [
     {
         title: "Total Registered Patients",
         value: "500 000",
@@ -42,7 +52,12 @@ const statistics = [
     },
 ];
 
-function DashboardStatistics() {
+type DashboardStatisticsProps = {
+    stats?: DashboardStat[];
+};
+
+function DashboardStatistics({ stats }: DashboardStatisticsProps) {
+    const statistics = stats && stats.length > 0 ? stats : defaultStatistics;
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 w-full px-4 py-4">
             {statistics.map((stat, index) => {
@@ -73,18 +88,20 @@ function DashboardStatistics() {
                             </p>
 
                             {/* The trend line at the bottom */}
-                            <div className="flex items-center space-x-2">
-                                {stat.trend === "up" ? (
-                                    <ArrowUpRight className="w-4 h-4 text-emerald-500" />
-                                ) : (
-                                    <ArrowDownRight className="w-4 h-4 text-red-500" />
-                                )}
-                                <span
-                                    className={`text-sm font-semibold ${stat.trend === "up" ? "text-emerald-500" : "text-red-500"}`}
-                                >
-                                    {stat.change}
-                                </span>
-                            </div>
+                            {stat.change && stat.trend ? (
+                                <div className="flex items-center space-x-2">
+                                    {stat.trend === "up" ? (
+                                        <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+                                    ) : (
+                                        <ArrowDownRight className="w-4 h-4 text-red-500" />
+                                    )}
+                                    <span
+                                        className={`text-sm font-semibold ${stat.trend === "up" ? "text-emerald-500" : "text-red-500"}`}
+                                    >
+                                        {stat.change}
+                                    </span>
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 );
