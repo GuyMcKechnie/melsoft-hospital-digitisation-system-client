@@ -11,6 +11,7 @@ import {
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
+import { useAuth } from "@/contexts/auth";
 import {
     Sidebar,
     SidebarContent,
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import { HospitalIcon } from "lucide-react";
 
-const data = {
+    const data = {
     user: {
         name: "shadcn",
         email: "m@example.com",
@@ -65,6 +66,16 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+    const { currentUser } = useAuth();
+
+    const sidebarUser = currentUser
+        ? {
+              name: currentUser.name || currentUser.email || "User",
+              email: currentUser.email || "",
+              avatar: (currentUser as any).avatar || "",
+          }
+        : data.user;
+
     return (
         <Sidebar collapsible="offcanvas" {...props}>
             <SidebarHeader>
@@ -89,7 +100,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <NavSecondary items={data.navSecondary} className="mt-auto" />
             </SidebarContent>
             <SidebarFooter>
-                <NavUser user={data.user} />
+                <NavUser user={sidebarUser} />
             </SidebarFooter>
         </Sidebar>
     );
