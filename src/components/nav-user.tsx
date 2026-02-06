@@ -7,7 +7,8 @@ import {
 } from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { post, setAuthToken } from "@/api/client";
+import { post } from "@/api/client";
+import { useAuth } from "@/contexts/auth";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -34,12 +35,15 @@ export function NavUser({
     };
 }) {
     const { isMobile } = useSidebar();
+    const { logout } = useAuth();
 
-    const initials = (user?.name || "").split(" ")
-        .map((p) => p[0] || "")
-        .slice(0, 2)
-        .join("")
-        .toUpperCase() || "U";
+    const initials =
+        (user?.name || "")
+            .split(" ")
+            .map((p) => p[0] || "")
+            .slice(0, 2)
+            .join("")
+            .toUpperCase() || "U";
 
     return (
         <SidebarMenu>
@@ -83,9 +87,9 @@ export function NavUser({
                                         src={user.avatar}
                                         alt={user.name}
                                     />
-                                        <AvatarFallback className="rounded-lg">
-                                            {initials}
-                                        </AvatarFallback>
+                                    <AvatarFallback className="rounded-lg">
+                                        {initials}
+                                    </AvatarFallback>
                                 </Avatar>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-medium">
@@ -122,19 +126,7 @@ export function NavUser({
                                     // ignore errors but continue client-side cleanup
                                 } finally {
                                     // clear client-side auth state and stored tokens
-                                    try {
-                                        setAuthToken(null);
-                                    } catch (e) {
-                                        try {
-                                            localStorage.removeItem(
-                                                "melsoft_auth_token",
-                                            );
-                                        } catch (e) {}
-                                    }
-                                    try {
-                                        localStorage.removeItem("accessToken");
-                                        localStorage.removeItem("refreshToken");
-                                    } catch (e) {}
+                                    logout();
 
                                     // navigate to login route
                                     try {

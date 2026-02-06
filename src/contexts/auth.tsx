@@ -13,6 +13,7 @@ type AuthContextValue = {
     currentUser: User | null;
     loading: boolean;
     refresh: () => Promise<User | null>;
+    logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -50,9 +51,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const logout = () => {
+        try {
+            setAuthToken(null);
+        } finally {
+            try {
+                localStorage.removeItem("accessToken");
+                localStorage.removeItem("refreshToken");
+            } catch (e) {}
+            setCurrentUser(null);
+            setLoading(false);
+        }
+    };
+
     return (
         <AuthContext.Provider
-            value={{ currentUser, loading, refresh: fetchMe }}
+            value={{ currentUser, loading, refresh: fetchMe, logout }}
         >
             {children}
         </AuthContext.Provider>
